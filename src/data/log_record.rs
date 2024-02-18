@@ -4,6 +4,7 @@ pub struct LogRecordPos {
     pub(crate) offset: u64,
 }
 
+#[derive(PartialEq, Eq)]
 pub enum LogRecordType {
     // 正常记录
     NORMAL = 1,
