@@ -1,11 +1,12 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, fs, path::PathBuf, sync::Arc};
 
 use bytes::Bytes;
+use log::warn;
 use parking_lot::RwLock;
 
 use crate::{
     data::{
-        data_file::DataFile,
+        data_file::{DataFile, DATA_FILE_NAME_SUFFIX},
         log_record::{LogRecord, LogRecordPos, LogRecordType},
     },
     errors::{Errors, Result},
@@ -22,6 +23,26 @@ pub struct Engine {
 }
 
 impl Engine {
+    /// 打开一个存储引擎实例
+    pub fn open(opts: Options) -> Result<Self> {
+        if let Some(e) = check_options(&opts) {
+            Err(e)
+        }
+        let options = opts.clone();
+
+        // 判断数据目录是否存在，不存在则创建
+        if !opts.dir_path.exists() {
+            let create_res = fs::create_dir(opts.dir_path);
+            if create_res.is_err() {
+                warn!("failed to create database dir: {:?}", create_res.unwrap_err());
+                Err(Errors::FailedToCreateDataBaseDir)
+            }
+        }
+
+        // Ok(Engine {})
+    }
+
+
     /// 存储 key/value 数据，key 不能为空
     pub fn put(&self, key: Bytes, value: Bytes) -> Result<()> {
         if key.is_empty() {
@@ -127,4 +148,40 @@ impl Engine {
             offset: write_offset,
         })
     }
+}
+
+// 从目录中读取数据文件
+fn load_data_files(dir_path: PathBuf) -> Result<Vec<DataFile>> {
+    let dir_files: Vec<DataFile> = Vec::new();
+    let dir = fs::read_dir(dir_path);
+    if dir.is_err() {
+        return Err(Errors::FailedToReadDataBaseDir);
+    }
+    let files_id: Vec<u32> = Vec::new();
+    for entry in dir.unwrap() {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        if path.is_file() {
+            // 拿到文件名
+            let file_name = path.file_name().unwrap().to_str().unwrap();
+            if file_name.ends_with(DATA_FILE_NAME_SUFFIX) {
+                // 解析文件 ID，文件名格式为 {id}.data
+                let split_names = file_name.split(".").collect();
+                
+            }
+        }
+    }
+}
+
+// 检查配置项
+fn check_options(opts: & Options) -> Option<Errors> {
+    let dir_path = opts.dir_path.to_str();
+    if dir_path.is_none() || dir_path.unwrap().is_empty() {
+        return Some(Errors::DirPathIsEmpty);
+    }
+
+    if opts.file_size <= 0 {
+        return Some(Errors::FileSizeTooSmall);
+    }
+    None
 }

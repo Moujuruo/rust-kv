@@ -20,6 +20,14 @@ pub enum Errors {
     RecordNotFound,
     #[error("data file not found")]
     DataFileNotFound,
+    #[error("dir path is empty")]
+    DirPathIsEmpty,
+    #[error("file size too small")]
+    FileSizeTooSmall,
+    #[error("failed to create database dir")]
+    FailedToCreateDataBaseDir,
+    #[error("failed to read database dir")]
+    FailedToReadDataBaseDir,
 }
 
 pub type Result<T> = result::Result<T, Errors>;
