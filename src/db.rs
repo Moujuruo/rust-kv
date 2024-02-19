@@ -107,6 +107,35 @@ impl Engine {
         Ok(())
     }
 
+    // 删除 key 对应的数据
+    pub fn delete(&self, key: Bytes) -> Result<()> {
+        if key.is_empty() {
+            return Err(Errors::KeyIsEmpty);
+        }
+
+        // 从内存索引中查找
+        let log_record_pos = self.index.get(key.to_vec());
+        if log_record_pos.is_none() {
+            return Ok(());
+        }
+
+        // 构造 LogRecord
+        let mut logrecord = LogRecord {
+            key: key.to_vec(),
+            value: Default::default(),
+            record_type: LogRecordType::DELETE,
+        };
+
+        self.append_log_record(&mut logrecord)?;
+
+        let ok = self.index.delete(key.to_vec());
+        if !ok {
+            return Err(Errors::IndexUpdateError);
+        }
+
+        Ok(())
+    }
+
     /// 获取 key 对应的 value
     pub fn get(&self, key: Bytes) -> Result<Bytes> {
         if key.is_empty() {
@@ -225,13 +254,14 @@ impl Engine {
                     offset,
                 };
 
-                match log_record.record_type {
+                let ok = match log_record.record_type {
                     LogRecordType::NORMAL => {
-                        self.index.put(log_record.key, log_record_pos);
+                        self.index.put(log_record.key.to_vec(), log_record_pos)
                     }
-                    LogRecordType::DELETE => {
-                        self.index.delete(log_record.key);
-                    }
+                    LogRecordType::DELETE => self.index.delete(log_record.key.to_vec()),
+                };
+                if !ok {
+                    return Err(Errors::IndexUpdateError);
                 }
 
                 offset += size;
