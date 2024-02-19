@@ -4,7 +4,7 @@ use parking_lot::RwLock;
 
 use crate::{errors::Result, fio::IOManager};
 
-use super::log_record::LogRecord;
+use super::log_record::{LogRecord, ReadLogRecord};
 
 pub const DATA_FILE_NAME_SUFFIX: &str = ".data";
 
@@ -25,13 +25,18 @@ impl DataFile {
         *write_offset_guard
     }
 
+    pub fn set_write_offset(&self, offset: u64) {
+        let mut write_offset_guard = self.write_offset.write();
+        *write_offset_guard = offset;
+    }
+
     pub fn get_file_id(&self) -> u32 {
         let file_id_guard = self.file_id.read();
         *file_id_guard
     }
 
     /// 读取日志记录
-    pub fn read_log_record(&self, offset: u64) -> Result<LogRecord> {
+    pub fn read_log_record(&self, offset: u64) -> Result<ReadLogRecord> {
         todo!()
     }
 
